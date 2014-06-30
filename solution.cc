@@ -1,0 +1,112 @@
+// Given two words (start and end), and a dictionary, find all shortest transformation sequence(s) from start to end, such that:
+
+// Only one letter can be changed at a time
+// Each intermediate word must exist in the dictionary
+// For example,
+
+// Given:
+// start = "hit"
+// end = "cog"
+// dict = ["hot","dot","dog","lot","log"]
+// Return
+//   [
+//     ["hit","hot","dot","dog","cog"],
+//     ["hit","hot","lot","log","cog"]
+//   ]
+
+class Solution {
+public:
+    vector<vector<string>> findLadders(string start, string end, unordered_set<string> &dict) {
+        unordered_map<string, int> dictMap;
+        vector<string> dictArr;
+        int cnt = 0;
+        for(unordered_set<string>::iterator it = dict.begin(); it != dict.end(); ++it) {
+            dictArr.push_back(*it);
+            dictMap[*it] = cnt++;
+        }
+        if(!dictMap.count(start)) {
+            dictArr.push_back(start);
+            dictMap[start] = cnt++;
+        }
+        if(!dictMap.count(end)) {
+            dictArr.push_back(end);
+            dictMap[end] = cnt++;
+        }
+        
+        queue<string> myQue;
+        unordered_set<string> inQue;
+        myQue.push(start);
+        inQue.insert(start);
+        int lvl1 = 1, lvl2 = 0;
+        int curDist = 0;
+        int minDist = 0;
+        bool found = false;
+        vector<int> dist(cnt, INT_MAX);
+        dist[dictMap[start]] = 0;
+        
+        vector<vector<int> > prev(cnt, vector<int>());
+        
+        while(!myQue.empty()) {
+            ++curDist;
+            if(found && curDist >= minDist) {
+                break;
+            }
+            while(lvl1) {
+                string curWord = myQue.front();
+                myQue.pop();
+                --lvl1;
+                for(int i = 0; i < curWord.size(); ++i) {
+                    for(char c = 'a'; c <= 'z'; ++c) {
+                        string newWord = curWord;
+                        newWord[i] = c;
+                        if(newWord == end) {
+                            found = true;
+                            minDist = curDist+1;
+                        }
+                        if(newWord != curWord && dict.count(newWord)) {
+                            int curWordIdx = dictMap[curWord];
+                            int newWordIdx = dictMap[newWord];;
+                            if(!inQue.count(newWord)) {
+                                myQue.push(newWord);
+                                inQue.insert(newWord);
+                                ++lvl2;
+                                dist[newWordIdx] = dist[curWordIdx]+1; 
+                            }
+                            if(dist[newWordIdx] == dist[curWordIdx]+1) {
+                                prev[newWordIdx].push_back(curWordIdx);
+                            }
+                        }
+                    }
+                }
+            }
+            lvl1 = lvl2;
+            lvl2 = 0;
+        }
+        
+        vector<vector<string> > res;
+        vector<string> path;
+        int endIdx = dictMap[end];
+        path.push_back(dictArr[endIdx]);
+        genPaths(minDist, 1, endIdx, dictArr, prev, path, res);
+        for(int i = 0; i < res.size(); ++i) {
+            reverse(res[i].begin(), res[i].end());
+        }
+        return res;
+    }
+    
+    void genPaths(int minDist, int curDist, int endIdx, vector<string> &dictArr, vector<vector<int> > &prev, vector<string> &path, vector<vector<string> > &res) {
+        if(curDist == minDist) {
+            res.push_back(path);
+            return;
+        }
+        
+        for(int i = 0; i < prev[endIdx].size(); ++i) {
+            int curIdx = prev[endIdx][i];
+            path.push_back(dictArr[curIdx]);
+            genPaths(minDist, curDist+1, curIdx, dictArr, prev, path, res);
+            path.pop_back();
+        }
+        
+        
+    }
+};
